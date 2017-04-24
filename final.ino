@@ -1,7 +1,7 @@
 //WiFi
 #include <ESP8266WiFi.h>
-const char* ssid = "VA";
-const char* password = "qwerty123";
+const char* ssid = "Your Wifi";
+const char* password = "WiFi password";
 WiFiClient espClient;
 
 //MQTT
@@ -161,4 +161,5 @@ void loop() {
     }
     client.publish(co2_topic, String(ppmc).c_str(), true);
   }
+  timer.run();
 }
