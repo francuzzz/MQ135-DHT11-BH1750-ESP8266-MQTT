@@ -6,10 +6,10 @@ WiFiClient espClient;
 
 //MQTT
 #include <PubSubClient.h>
-#define mqtt_server "m21.cloudmqtt.com"
-#define mqtt_user "sejaohtm"
-#define mqtt_password "uiYM7HIoLWqo"
-#define mqtt_clientId "ESP0081C778"
+#define mqtt_server "your server"
+#define mqtt_user "your user"
+#define mqtt_password "your passworg"
+#define mqtt_clientId "unique id"
 
 
 const long sampleDelay = 30000;
