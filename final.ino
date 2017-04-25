@@ -1,51 +1,67 @@
 //WiFi
 #include <ESP8266WiFi.h>
-const char* ssid = "Your Wifi";
-const char* password = "WiFi password";
+const char* ssid = "VA";
+const char* password = "qwerty123";
 WiFiClient espClient;
 
 //MQTT
 #include <PubSubClient.h>
-#define mqtt_server "your server"
-#define mqtt_user "your user"
-#define mqtt_password "your passworg"
-#define mqtt_clientId "unique id"
+#define mqtt_server "192.168.137.1"
+#define mqtt_clientId "ESP0081C778"
 
 
-const long sampleDelay = 30000;
+
 PubSubClient client(espClient);
+
 // MQTT Topics
 #define humidity_topic "sensor/humidity"
 #define temperature_topic "sensor/temperature"
 #define co2_topic "sensor/co2"
+#define light_topic "sensor/light"
 
+
+//DHT
 #include <DHT.h>
 #include <DHT_U.h>
-#include <MQ135.h>
 #define DHTTYPE DHT11 // Тип датчика
-#define DHTPIN 5 //К какому пину подключен датчик DHT
+#define DHTPIN 14 //К какому пину подключен датчик DHT
 DHT dht (DHTPIN, DHTTYPE);
 
+//MQ135
+#include <MQ135.h>
 MQ135 gasSensor = MQ135 (A0); //Датчик газа подключен к аналоговому пину
 
+//BH1750
+#include <Wire.h>
+#include <BH1750.h>
 
+#define I2C_SDA_PIN   (4)      // D2  pin (SDA / GPIO-4)
+#define I2C_SCL_PIN   (5)      // D1  pin (SCL / GPIO-5)
+
+BH1750 lightMeter(0x23);
+
+//Timer
 #include <TimeLib.h>
 #include <SimpleTimer.h>
 SimpleTimer timer;
 
 unsigned long lastSampleTime = 0;
+const long sampleDelay = 30000;
 
 void setup() {
   Serial.begin(115200);
   dht.begin();
+  Wire.begin( I2C_SDA_PIN, I2C_SCL_PIN );
   setupWifi();
-  client.setServer(mqtt_server, 11918);
+  client.setServer(mqtt_server, 1883);
   timer.setInterval(5000L,sendTemps);
+  lightMeter.begin(BH1750_CONTINUOUS_HIGH_RES_MODE);
 
 }
 
 void sendTemps (){
 
+uint16_t lux = lightMeter.readLightLevel();
 float h = dht.readHumidity(); 
 float t = dht.readTemperature(); 
 
@@ -73,7 +89,9 @@ Serial.print("Humidity: ");
   Serial.println(ppm);
   Serial.print("PPMC: ");
   Serial.println(ppmc);
-  Serial.println();
+  Serial.print("Light: ");
+  Serial.print(lux);
+  Serial.println(" lx");
 
 }
 void setupWifi() {
@@ -102,7 +120,7 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect(mqtt_clientId, mqtt_user, mqtt_password)) {
+    if (client.connect(mqtt_clientId)) {
       Serial.println("connected");
     } else {
       Serial.print("failed, rc=");
@@ -123,6 +141,7 @@ void loop() {
   unsigned long currentMillis = millis();
   float h = dht.readHumidity(); 
   float t = dht.readTemperature(); 
+  uint16_t lux = lightMeter.readLightLevel();
 
  if (isnan(h) || isnan(t)){
      return;
@@ -159,7 +178,17 @@ void loop() {
       Serial.print(h);
       Serial.println("%");
     }
-    client.publish(co2_topic, String(ppmc).c_str(), true);
+    client.publish(co2_topic, String(ppm).c_str(), true);
+    client.publish(light_topic, String(lux).c_str(), true);
+
+      Serial.print("CO2: ");
+      Serial.print(ppm);
+      Serial.println("ppm");
+      Serial.print("Light: ");
+      Serial.print(lux);
+      Serial.println("lx");
   }
-  timer.run();
-}
+timer.run();
+  }
+
+
